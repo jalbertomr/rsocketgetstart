@@ -4,6 +4,7 @@ import com.bext.rsocketsgetstart.entity.Message;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.stereotype.Controller;
 import reactor.core.publisher.Flux;
@@ -11,6 +12,8 @@ import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.util.stream.Stream;
 
 @Slf4j
 @SpringBootApplication
@@ -28,6 +31,12 @@ public class RsocketsgetstartApplication {
         return Mono.just(new Message("in controller message: " + message.getMessage()));
     }
 
+    @MessageMapping("request-response.{name}")
+    public String requestResponse(@DestinationVariable String name){
+        log.info("Received request-response.{name} : {}", name);
+        return "request-response: " + name;
+    }
+
     @MessageMapping("fire-and-forget")
     public Mono<Void> fireAndforget(final Message message){
         log.info("-> fire-and-forget request: {}", message);
@@ -41,6 +50,17 @@ public class RsocketsgetstartApplication {
         return Flux
                 .interval(Duration.ofSeconds(1))
                 .map(index -> new Message("in controller message: " + message.getMessage() + " request #: " + index))
+                .log();
+    }
+
+    @MessageMapping("request-stream.{name}")
+    public Flux<Message> requestResponselux(@DestinationVariable String name){
+        Hooks.onErrorDropped(error-> log.warn("Exception happened: {}", error.getMessage()));
+        log.info("Received request-responseFlux.{name} : {}", name);
+        return Flux
+                .fromStream(Stream.generate(() -> new Message("MyMessage-" + name + " @" + Instant.now()) ))
+                .take(4)
+                .delayElements(Duration.ofSeconds(1))
                 .log();
     }
 
