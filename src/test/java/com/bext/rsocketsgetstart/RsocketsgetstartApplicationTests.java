@@ -8,6 +8,7 @@ import org.springframework.boot.rsocket.context.LocalRSocketServerPort;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.messaging.rsocket.RSocketRequester;
 import org.springframework.messaging.rsocket.RSocketStrategies;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -52,5 +53,25 @@ class RsocketsgetstartApplicationTests {
         StepVerifier
                 .create(response)
                 .verifyComplete();
+    }
+
+    @Test
+    void requestStreamTest(){
+        //send a request stream
+        Flux<Message> streamResp = requester
+                .route("stream-request")
+                .data( new Message("MyMessage"))
+                .retrieveFlux(Message.class);
+
+        // verify that the response is a flux stream
+        StepVerifier
+                .create(streamResp)
+                .consumeNextWith( message ->
+                        assertThat(message.getMessage()).isEqualTo("in controller message: MyMessage request #: 0"))
+                .expectNextCount(0)
+                .consumeNextWith( message ->
+                        assertThat(message.getMessage()).isEqualTo("in controller message: MyMessage request #: 1"))
+                .thenCancel()
+                .verify();
     }
 }

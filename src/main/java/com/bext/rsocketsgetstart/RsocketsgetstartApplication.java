@@ -6,8 +6,11 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.stereotype.Controller;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
+
+import java.time.Duration;
 
 @Slf4j
 @SpringBootApplication
@@ -29,5 +32,15 @@ public class RsocketsgetstartApplication {
     public Mono<Void> fireAndforget(final Message message){
         log.info("-> fire-and-forget request: {}", message);
         return Mono.empty();
+    }
+
+    @MessageMapping("stream-request")
+    public Flux<Message> stream(final Message message){
+        Hooks.onErrorDropped(error->log.warn("Exception happened: {}", error.getMessage()));
+        log.info("-> stream-request: {}", message);
+        return Flux
+                .interval(Duration.ofSeconds(1))
+                .map(index -> new Message("in controller message: " + message.getMessage() + " request #: " + index))
+                .log();
     }
 }
