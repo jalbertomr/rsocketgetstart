@@ -20,7 +20,7 @@ class RsocketsgetstartApplicationTests {
     @BeforeAll
     public static void setupOnce(@Autowired RSocketRequester.Builder builder,
                                  @LocalRSocketServerPort Integer port,
-                                 @Autowired RSocketStrategies strategies){
+                                 @Autowired RSocketStrategies strategies) {
         requester = builder.connectTcp("localhost", port)
                 .block();
     }
@@ -41,4 +41,16 @@ class RsocketsgetstartApplicationTests {
                 .verifyComplete();
     }
 
+    @Test
+    void fireAndForgetTest(){
+        //send a fire-and-forget message
+        Mono<Void> response = requester
+                .route("fire-and-forget")
+                .data( new Message("MyMessage"))
+                .retrieveMono(Void.class);
+        //assert that the result is a completed mono
+        StepVerifier
+                .create(response)
+                .verifyComplete();
+    }
 }
