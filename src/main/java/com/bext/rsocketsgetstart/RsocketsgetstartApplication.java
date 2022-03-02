@@ -43,4 +43,17 @@ public class RsocketsgetstartApplication {
                 .map(index -> new Message("in controller message: " + message.getMessage() + " request #: " + index))
                 .log();
     }
+
+    @MessageMapping("request-channel")
+    public Flux<Message> channel(final Flux<Integer> settings){
+        Hooks.onErrorDropped(error->log.warn("Exception happened: {}", error.getMessage()));
+        log.info("Received request-channel");
+
+        return settings
+                .doOnNext(setting -> log.info("Requested interval is {} seconds.", setting))
+                .doOnCancel(() -> log.warn("The client cancel the channel."))
+                .switchMap(setting -> Flux.interval(Duration.ofSeconds( setting)))
+                .map(index -> new Message("channel generating response #" + index))
+                .log();
+    }
 }
